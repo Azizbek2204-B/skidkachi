@@ -2,6 +2,8 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  Req,
+  UnauthorizedException,
 } from "@nestjs/common";
 import { UsersService } from "../users/users.service";
 import { JwtService } from "@nestjs/jwt";
@@ -9,7 +11,7 @@ import { User } from "../users/models/user.model";
 import { CreateUserDto } from "../users/dto/create-user.dto";
 import { SignInDto } from "./dto/sign-in.dto";
 import * as bcrypt from "bcrypt";
-import { Response } from "express";
+import { Request, Response } from "express";
 
 @Injectable()
 export class AuthService {
@@ -56,6 +58,9 @@ export class AuthService {
     if (!user) {
       throw new BadRequestException("Email yoki password noto'g'ri1");
     }
+    if (!user.is_active) {
+      throw new BadRequestException("Avval emailni tasdiqlang");
+    }
     const isValidPassword = await bcrypt.compare(
       signInDto.password,
       user.hashed_password
@@ -73,6 +78,81 @@ export class AuthService {
     return {
       message: "Tizimga xush kelibsiz",
       accessToken,
+    };
+  }
+
+  async signOut(req: Request, res: Response) {
+    const refresh_token = req.cookies["refresh_token"];
+    if (!refresh_token) {
+      throw new BadRequestException("Refresh token topilmadi");
+    }
+
+    let userId: number;
+
+    try {
+      const payload = await this.jwtService.verifyAsync(refresh_token, {
+        secret: process.env.REFRESH_TOKEN_KEY,
+      });
+      userId = payload.id;
+    } catch (error) {
+      throw new UnauthorizedException("Token noto‘g‘ri yoki muddati tugagan");
+    }
+
+    const user = await this.usersService.findOne(userId);
+    if (!user) {
+      throw new UnauthorizedException("Foydalanuvchi topilmadi");
+    }
+
+    user.hashed_refresh_token = "";
+    await user.save();
+
+    res.clearCookie("refresh_token");
+
+    return { message: "Logout successfully" };
+  }
+
+  async refreshToken(req: Request, res:Response) {
+    const refresh_token = req.cookies["refresh_token"];
+    if (!refresh_token) {
+      throw new BadRequestException("Refresh token topilmadi");
+    }
+    let payload: any;
+    try {
+      payload = await this.jwtService.verifyAsync(refresh_token, {
+        secret: process.env.REFRESH_TOKEN_KEY,
+      });
+    } catch (error) {
+      throw new UnauthorizedException("Token noto‘g‘ri yoki muddati tugagan");
+    }
+
+    const user = await this.usersService.findOne(payload.id);
+
+    if (!user || !user.hashed_refresh_token) {
+      throw new UnauthorizedException(
+        "Foydalanuvchi topilmadi yoki token yo‘q"
+      );
+    }
+
+    const isMatch = await bcrypt.compare(
+      refresh_token,
+      user.hashed_refresh_token
+    );
+    if (!isMatch) {
+      throw new UnauthorizedException("Token mos emas");
+    }
+
+    const tokens = await this.generateTokens(user);
+    user.hashed_refresh_token = await bcrypt.hash(tokens.refreshToken, 7);
+    await user.save();
+
+    res.cookie("refresh_token", tokens.refreshToken, {
+      maxAge: Number(process.env.COOKIE_TIME),
+      httpOnly: true,
+    });
+
+    return {
+      message: "Token yangilandi",
+      accessToken: tokens.accessToken,
     };
   }
 }
