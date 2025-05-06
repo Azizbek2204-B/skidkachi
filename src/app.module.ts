@@ -28,6 +28,10 @@ import { StoreSubscribesModule } from "./store_subscribes/store_subscribes.modul
 import { Favorite } from "./favorites/models/favorite.model";
 import { MediaModule } from "./media/media.module";
 import { Review } from "./reviews/models/review.model";
+import { Discount } from "./discounts/models/discount.model";
+import { Category } from "./category/models/category.model";
+import { Type } from "./type/models/type.model";
+import { Ad } from "./ads/models/ad.model";
 
 @Module({
   imports: [
@@ -47,9 +51,9 @@ import { Review } from "./reviews/models/review.model";
       username: process.env.PG_USER,
       password: process.env.PG_PASSWORD,
       database: process.env.PG_DB,
-      models: [User, Store, Bot, Favorite, Review],
+      models: [User, Store, Bot, Favorite, Review, Discount, Category, Type, Ad],
       autoLoadModels: true,
-      sync: { alter: true },
+      sync: { force: true },
       logging: false,
     }),
     UsersModule,

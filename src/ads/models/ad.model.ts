@@ -1,4 +1,4 @@
-import { Column, DataType, Model } from "sequelize-typescript";
+import { Column, DataType, Model, Table } from "sequelize-typescript";
 
 interface IAdCreationAttr {
   title: string;
@@ -10,6 +10,7 @@ interface IAdCreationAttr {
   view_count: number;
 }
 
+@Table({tableName:"ad"})
 export class Ad extends Model<Ad, IAdCreationAttr> {
   @Column({
     type: DataType.INTEGER,

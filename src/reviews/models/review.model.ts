@@ -36,7 +36,7 @@ export class Review extends Model<Review, IReviewCreationAttr>{
   declare comment: string;
 
   @Column({
-    type:DataType.TINYINT
+    type:DataType.SMALLINT
   })
   declare rating: number;
 }
