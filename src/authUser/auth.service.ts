@@ -52,7 +52,7 @@ export class AuthService {
     }
 
     const newUser = await this.usersService.create(createUserDto);
-    return { message: "Foydalanuchi qo'shildi", userId: newUser.id };
+    return { message: "Foydalanuchi qo'shildi", user_id: newUser.id };
   }
 
   async signIn(signInDto: SignInDto, res: Response) {
@@ -84,18 +84,18 @@ export class AuthService {
   }
 
   async signOut(refreshToken: string, res: Response) {
-    let userId: number;
+    let user_id: number;
 
     try {
       const payload = await this.jwtService.verifyAsync(refreshToken, {
         secret: process.env.REFRESH_TOKEN_KEY,
       });
-      userId = payload.id;
+      user_id = payload.id;
     } catch (error) {
       throw new UnauthorizedException("Token noto‘g‘ri yoki muddati tugagan");
     }
 
-    const user = await this.usersService.findOne(userId);
+    const user = await this.usersService.findOne(user_id);
     if (!user) {
       throw new UnauthorizedException("Foydalanuvchi topilmadi");
     }
@@ -153,16 +153,16 @@ export class AuthService {
   //   };
   // }
 
-  async refreshToken(userId: number, refresh_token: string, res: Response) {
+  async refreshToken(user_id: number, refresh_token: string, res: Response) {
     const decodedToken = await this.jwtService.decode(refresh_token);
-    console.log(userId);
+    console.log(user_id);
     console.log(decodedToken["id"]);
 
-    if (userId !== decodedToken["id"]) {
+    if (user_id !== decodedToken["id"]) {
       throw new ForbiddenException("Ruxsat etilmagan");
     }
 
-    const user = await this.usersService.findOne(userId);
+    const user = await this.usersService.findOne(user_id);
     if (!user || !user.hashed_refresh_token) {
       throw new NotFoundException("User not found");
     }
@@ -186,7 +186,7 @@ export class AuthService {
 
     const response = {
       message: "User refreshed",
-      userId: user.id,
+      user_id: user.id,
       access_token: accessToken,
     };
     return response;

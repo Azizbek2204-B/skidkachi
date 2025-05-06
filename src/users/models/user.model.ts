@@ -1,4 +1,13 @@
-import { Column, DataType, Model, Table } from "sequelize-typescript";
+import {
+  BelongsToMany,
+  Column,
+  DataType,
+  Model,
+  Table,
+} from "sequelize-typescript";
+import { Discount } from "../../discounts/models/discount.model";
+import { Favorite } from "../../favorites/models/favorite.model";
+import { Review } from "../../reviews/models/review.model";
 
 interface IUsersCreationAttr {
   name: string;
@@ -69,4 +78,10 @@ export class User extends Model<User, IUsersCreationAttr> {
     defaultValue: DataType.UUIDV4,
   })
   declare activation_link: string;
+
+  @BelongsToMany(() => Discount, () => Favorite)
+  favorite_discounts: Discount[];
+
+  @BelongsToMany(()=>Discount, ()=>Review)
+  review_discounts:Discount[]
 }
